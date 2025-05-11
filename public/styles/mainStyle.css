@@ -1,0 +1,124 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    background: #1a1a1a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.chat-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.chat-header h1 {
+    color: #7289da;
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#chat {
+    background: #2d2d2d;
+    border-radius: 10px;
+    padding: 20px;
+    height: 60vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.message {
+    background: #363636;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    animation: fadeIn 0.3s ease-in;
+    transition: transform 0.2s;
+}
+
+.message:hover {
+    transform: translateX(5px);
+}
+
+.username {
+    color: #7289da;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.timestamp {
+    color: #888;
+    font-size: 0.8em;
+}
+
+.message-text {
+    margin-top: 8px;
+    color: #dcdcdc;
+    line-height: 1.4;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    background: #363636;
+    color: #fff;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #7289da;
+}
+
+button {
+    padding: 12px 25px;
+    background: #7289da;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+button:hover {
+    background: #5b6eae;
+    transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #7289da;
+    border-radius: 4px;
+}
