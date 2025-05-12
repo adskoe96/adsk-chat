@@ -9,6 +9,10 @@
         <div class="chat-header">
             <h1>adsk-chat</h1>
         </div>
+
+        <div class="online-counter">
+            Онлайн: <span id="onlineCount">0</span>
+        </div>
         
         <div id="chat"></div>
         
@@ -23,6 +27,7 @@
     <script>
         const socket = io();
         const chatDiv = document.getElementById('chat');
+        const onlineSpan = document.getElementById('onlineCount');
         
         function formatDate(date) {
             return new Date(date).toLocaleString('ru-RU', {
@@ -50,6 +55,7 @@
 
         socket.on('message', addMessage);
         socket.on('history', history => history.forEach(addMessage));
+        socket.on('online', count => { onlineSpan.textContent = count; });
 
         function sendMessage() {
             const username = document.getElementById('username').value.trim();
