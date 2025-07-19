@@ -2,6 +2,7 @@ simple chat running on node.js.
 created for college coursework.  
   
 startup:  
+`git clone https://github.com/adskoe96/adsk-chat && cd adsk-chat`  
 `npm install express socket.io mysql2 sanitize-html`  
 `node server.js` or `npm start`  
   
