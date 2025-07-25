@@ -12,8 +12,7 @@ const pool = mysql.createPool({
   user: 'root',
   password: 'bruh_password',
   database: 'chat_db',
-  port: 3306,
-  socketPath: '/data/data/com.termux/files/usr/var/run/mysqld/mysqld.sock' // Termux thing!!!
+  port: 3306
 });
 
 const sanitizeOptions = {
