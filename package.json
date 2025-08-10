@@ -1,6 +1,12 @@
 {
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "body-parser": "^2.2.0",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "multer-storage": "^0.4.1",
     "mysql2": "^3.14.2",
     "sanitize-html": "^2.17.0",
     "socket.io": "^4.8.1"

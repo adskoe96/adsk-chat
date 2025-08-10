@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>adsk-chat | Профиль</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/styles/dark-styles.css">
+</head>
+<body>
+  <div class="center-container">
+    <div class="profile-wrapper">
+        <button id="backButton" class="btn btn-back">
+            <i class="fas fa-arrow-left"></i> Назад в чат
+        </button>
+        <div class="profile-card">
+          <div class="profile-left">
+            <div class="avatar-container">
+              <img id="avatarImg" src="" alt="Аватар">
+              <div class="avatar-overlay" id="avatarOverlay" style="display: none;">
+                <i class="fas fa-camera"></i>
+              </div>
+            </div>
+            <h2 id="usernameDisplay">Загрузка...</h2>
+            <div class="profile-buttons" id="profileButtons" style="display: none;">
+                <button id="editProfileButton" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Редактировать профиль
+                </button>
+            </div>
+          </div>
+        
+          <div class="profile-right">
+            <div class="profile-section">
+              <h3 class="section-title"><i class="fas fa-info-circle"></i> Основная информация</h3>
+              <div class="profile-info">
+                <div class="info-item">
+                  <span class="info-label">Статус</span>
+                  <div class="info-value">
+                    <span id="statusIndicator"></span>
+                    <span id="status">Загрузка...</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">ID пользователя</span>
+                  <span class="info-value" id="userId">-</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Роль</span>
+                  <span class="info-value" id="role">user</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-section">
+              <h3 class="section-title"><i class="fas fa-user"></i> О себе</h3>
+              <p class="info-value" id="description">—</p>
+            </div>
+
+            <div id="editProfile" style="display: none;">
+              <form id="editForm" class="edit-form">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="editUsername">Никнейм</label>
+                    <input type="text" name="username" id="editUsername" class="form-input">
+                    <p class="error-text" id="usernameError">Никнейм слишком короткий</p>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="editAvatar">Аватар</label>
+                    <input type="file" name="avatar" id="editAvatar" accept=".png,.jpg,.jpeg,.gif" class="form-input">
+                    <img id="avatarPreview" src="" alt="Предпросмотр" style="width: 100px; height: 100px; display: none; margin-top: 10px;">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group" style="flex: 1 1 100%;">
+                    <label class="form-label" for="editDescription">Описание</label>
+                    <textarea name="description" id="editDescription" maxlength="500" class="form-input" style="height: 120px;"></textarea>
+                    <p class="char-counter" id="descCounter">0/500</p>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button>
+                  <button type="button" id="cancelEdit" class="btn btn-outline">Отмена</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const profileId = window.location.pathname.split('/profile/')[1];
+    if (!profileId || isNaN(parseInt(profileId))) {
+        alert('Неверный ID профиля');
+        window.location.href = '/';
+    }
+
+    let isOwnProfile = false;
+    let socket;
+
+    function updateOnlineStatus(isOnline) {
+        document.getElementById('status').textContent = isOnline ? 'Онлайн' : 'Оффлайн';
+        const statusIndicator = document.getElementById('statusIndicator');
+        statusIndicator.className = 'status-indicator ' + (isOnline ? 'online' : 'offline');
+    }
+
+    fetch(`/api/profile/${profileId}`, { credentials: 'include' })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Ошибка сети или авторизации');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.id) {
+                throw new Error('Профиль не найден');
+            }
+
+            document.getElementById('usernameDisplay').textContent = data.username || 'Пользователь';
+            document.getElementById('status').textContent = data.online ? 'Онлайн' : 'Оффлайн';
+            const statusIndicator = document.getElementById('statusIndicator');
+            statusIndicator.className = 'status-indicator ' + (data.online ? 'online' : 'offline');
+            document.getElementById('userId').textContent = data.id;
+            document.getElementById('role').textContent = data.role;
+            document.getElementById('description').textContent = data.description || '—';
+            document.getElementById('avatarImg').src = data.avatar || '/uploads/default-avatar.jpg';
+
+            document.getElementById('editUsername').value = data.username || '';
+            document.getElementById('editDescription').value = data.description || '';
+            document.getElementById('avatarPreview').src = data.avatar || '';
+            document.getElementById('avatarPreview').style.display = data.avatar ? 'block' : 'none';
+
+            socket = io({
+                auth: { token: localStorage.getItem('token') }
+            });
+
+            socket.on('onlineData', data => {
+                const isOnline = data.users.some(user => user.id === parseInt(profileId));
+                updateOnlineStatus(isOnline);
+            });
+
+            updateCharCounter();
+
+            fetch('/api/me', { credentials: 'include' })
+                .then(res => res.json())
+                .then(me => {
+                    if (me.id === data.id) {
+                        document.getElementById('profileButtons').style.display = 'block';
+                        isOwnProfile = true;
+                        document.getElementById('avatarOverlay').style.display = 'block';
+                    }
+                })
+                .catch(err => console.error('Ошибка загрузки текущего пользователя:', err));
+        })
+        .catch(err => {
+            console.error('Ошибка загрузки профиля:', err.message);
+        });
+
+    document.getElementById('editProfileButton')?.addEventListener('click', () => {
+        const editProfile = document.getElementById('editProfile');
+        editProfile.style.display = 'block';
+        editProfile.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    const editForm = document.getElementById('editForm');
+    editForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('editUsername').value;
+        const usernameError = document.getElementById('usernameError');
+        if (username.length < 3) {
+            usernameError.style.display = 'block';
+            return;
+        } else {
+            usernameError.style.display = 'none';
+        }
+
+        const formData = new FormData(editForm);
+
+        fetch('/update-profile', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Ошибка сохранения');
+            }
+        })
+        .catch(err => console.error('Ошибка обновления профиля:', err));
+    });
+
+    document.getElementById('editAvatar')?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const preview = document.getElementById('avatarPreview');
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+        }
+    });
+
+    document.getElementById('cancelEdit')?.addEventListener('click', () => {
+        document.getElementById('editProfile').style.display = 'none';
+    });
+
+    document.getElementById('backButton').addEventListener('click', () => {
+        window.location.href = '/';
+    });
+
+    function updateCharCounter() {
+        const desc = document.getElementById('editDescription');
+        const counter = document.getElementById('descCounter');
+        if (desc && counter) {
+            counter.textContent = `${desc.value.length}/500`;
+            desc.addEventListener('input', () => {
+                counter.textContent = `${desc.value.length}/500`;
+            });
+        }
+    }
+
+    document.getElementById('avatarOverlay')?.addEventListener('click', () => {
+        if (isOwnProfile) {
+            document.getElementById('editAvatar').click();
+        }
+    });
+  </script>
+</body>
+</html>

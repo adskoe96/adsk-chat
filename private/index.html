@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>adsk-chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/dark-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="chat-header">
+            <h1>adsk-chat</h1>
+        </div>
+
+        <div class="chat-container">
+          <div class="chat-main">
+            <div id="chat"></div>
+            <div class="input-group">
+              <input type="text" id="message" placeholder="Сообщение" required>
+              <button onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i> Отправить
+              </button>
+            </div>
+          </div>
+      
+          <aside id="usersPanel" class="users-panel">
+            <div class="users-header">
+              <span>Online (<span id="onlineCount">0</span>)</span>
+            </div>
+            <div id="usersList"></div>
+          </aside>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        if (!localStorage.getItem('token')) {
+            window.location.href = '/login.html';
+        }
+    </script>
+
+    <script>
+        const socket = io({
+            auth: { token: localStorage.getItem('token') }
+        });
+        const chatDiv = document.getElementById('chat');
+        const onlineSpan = document.getElementById('onlineCount');
+        const usersList = document.getElementById('usersList');
+
+        function scrollChatToBottom() {
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        socket.on('onlineData', data => {
+            onlineSpan.textContent = data.count;
+            usersList.innerHTML = '';
+            data.users.forEach(user => {
+                const div = document.createElement('div');
+                div.className = 'user-item';
+                div.innerHTML = `
+                  <div class="status-indicator ${user.online ? 'online' : 'offline'}"></div>
+                  <div class="u-name">${escapeHtml(user.username)}</div>
+                  <div class="u-id">#${user.id}</div>
+                `;
+                div.onclick = () => {
+                    window.location.href = `/profile/${user.id}`;
+                };
+                usersList.appendChild(div);
+            });
+        });
+        
+        function formatDate(date) {
+            return new Date(date).toLocaleString('ru-RU', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        function createMessageElement(msg) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+            messageDiv.innerHTML = `
+              <img class="message-avatar" src="${msg.avatar || '/uploads/default-avatar.jpg'}" alt="${escapeHtml(msg.username)}">
+              <div class="message-body">
+                <div class="message-meta">
+                  <a class="username" href="/profile/${msg.id}">${escapeHtml(msg.username)}</a>
+                  <span class="role-badge ${msg.role}">${msg.role}</span>
+                  <span class="timestamp">${formatDate(msg.timestamp)}</span>
+                </div>
+                <div class="message-text">${escapeHtml(msg.message)}</div>
+              </div>
+            `;
+            return messageDiv;
+        }
+
+        function addMessage(msg) {
+            const messageElement = createMessageElement(msg);
+            chatDiv.appendChild(messageElement);
+            setTimeout(scrollChatToBottom, 10);
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe && unsafe !== 0) return '';
+            return String(unsafe)
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+        }
+
+        socket.on('message', addMessage);
+
+        socket.on('history', history => {
+            const fragment = document.createDocumentFragment();
+            
+            history.forEach(msg => {
+                const messageElement = createMessageElement(msg);
+                fragment.appendChild(messageElement);
+            });
+            
+            chatDiv.appendChild(fragment);
+            scrollChatToBottom();
+        });
+
+        socket.on('online', count => { onlineSpan.textContent = count; });
+
+        function sendMessage() {
+            const message = document.getElementById('message').value.trim();
+            if (message) {
+                socket.emit('message', { message });
+                document.getElementById('message').value = '';
+            }
+        }
+
+        document.getElementById('message').addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        window.addEventListener('load', scrollChatToBottom);
+    </script>
+</body>
+</html>

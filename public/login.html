@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>adsk-chat | Вход в чат</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/dark-styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h2>Вход в adsk-chat</h2>
+        </div>
+        <div class="login-content">
+            <div id="loginMessage" class="message"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <i class="input-icon fas fa-user"></i>
+                    <input type="text" id="loginUsername" class="form-input" placeholder="Никнейм" required>
+                </div>
+                <div class="form-group">
+                    <i class="input-icon fas fa-lock"></i>
+                    <input type="password" id="loginPassword" class="form-input" placeholder="Пароль" required>
+                </div>
+                <button type="submit" class="btn">Войти</button>
+            </form>
+            <div class="switch-container">
+                Нет аккаунта? <span class="switch-link" onclick="openRegisterModal()">Зарегистрироваться</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Регистрация</h2>
+                <span class="close" onclick="closeRegisterModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="registerMessage" class="message"></div>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <i class="input-icon fas fa-user"></i>
+                        <input type="text" id="regUsername" class="form-input" placeholder="Никнейм" required>
+                    </div>
+                    <div class="form-group">
+                        <i class="input-icon fas fa-lock"></i>
+                        <input type="password" id="regPassword" class="form-input" placeholder="Пароль" required>
+                    </div>
+                    <button type="submit" class="btn">Зарегистрироваться</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openRegisterModal() {
+            document.getElementById('registerModal').style.display = 'flex';
+            document.getElementById('registerMessage').style.display = 'none';
+        }
+        
+        function closeRegisterModal() {
+            document.getElementById('registerModal').style.display = 'none';
+        }
+        
+        function showMessage(element, message, isSuccess) {
+            element.textContent = message;
+            element.className = isSuccess ? 'message success' : 'message error';
+            element.style.display = 'block';
+            
+            if (isSuccess) {
+                setTimeout(() => {
+                    element.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const messageEl = document.getElementById('loginMessage');
+
+            if (!username || !password) {
+                showMessage(messageEl, 'Заполните все поля', false);
+                return;
+            }
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showMessage(messageEl, 'Успешный вход! Перенаправление...', true);
+                    localStorage.setItem('token', data.token);
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                } else {
+                    showMessage(messageEl, data.error || 'Ошибка входа', false);
+                }
+            } catch (error) {
+                showMessage(messageEl, 'Сетевая ошибка', false);
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const messageEl = document.getElementById('registerMessage');
+
+            if (!username || !password) {
+                showMessage(messageEl, 'Заполните все поля', false);
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage(messageEl, 'Пароль должен быть не менее 6 символов', false);
+                return;
+            }
+
+            try {
+                const res = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showMessage(messageEl, 'Регистрация успешна! Теперь войдите.', true);
+                    setTimeout(() => {
+                        closeRegisterModal();
+                    }, 2000);
+                } else {
+                    showMessage(messageEl, data.error || 'Ошибка регистрации', false);
+                }
+            } catch (error) {
+                showMessage(messageEl, 'Сетевая ошибка', false);
+            }
+        });
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('registerModal')) {
+                closeRegisterModal();
+            }
+        });
+
+        document.querySelector('.login-container').style.animation = 'fadeIn 0.5s ease-out';
+    </script>
+</body>
+</html>
